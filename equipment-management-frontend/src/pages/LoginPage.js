@@ -10,7 +10,7 @@ const LoginPage = () => {
     e.preventDefault();
   
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('http://localhost:5000/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -20,8 +20,8 @@ const LoginPage = () => {
   
       if (response.ok) {
         const { access_token } = await response.json();
-        localStorage.setItem('accessToken', access_token);
-        navigate('/');
+        localStorage.setItem('authToken', access_token);
+        navigate('/HomePage');
       } else {
         console.error('Erro de login:', response.status);
         // Exibir uma mensagem de erro para o usuário
