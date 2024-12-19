@@ -22,6 +22,7 @@ const ProtectedLayout = () => {
           <Route path="equipamentos" element={<EquipamentosPage />} />
           <Route path="equipamentos/novo" element={<EquipamentoFormPage />} />
           <Route path="equipamentos/:id" element={<EquipamentoViewPage />} />
+          <Route path="equipamentos/:id/editar" element={<EquipamentoFormPage />} />
         </Routes>
       </div>
     </div>
