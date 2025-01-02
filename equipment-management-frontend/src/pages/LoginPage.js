@@ -28,7 +28,7 @@ const LoginPage = () => {
   useEffect(() => {
     const token = TokenService.getToken();
     if (token && !TokenService.isTokenExpired()) {
-      navigate('/HomePage');
+      navigate('/LoginPage');
     }
   }, [navigate]);
 
