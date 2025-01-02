@@ -1,10 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+const TokenService = {
+  getToken: () => sessionStorage.getItem('authToken'),
+  setToken: (token) => {
+    sessionStorage.setItem('authToken', token);
+    sessionStorage.setItem('tokenTimestamp', Date.now().toString());
+  },
+  removeToken: () => {
+    sessionStorage.removeItem('authToken');
+    sessionStorage.removeItem('tokenTimestamp');
+  },
+  isTokenExpired: () => {
+    const timestamp = sessionStorage.getItem('tokenTimestamp');
+    if (!timestamp) return true;
+    
+    const TOKEN_EXPIRY_TIME = 5 * 60 * 1000; // 5 minutos em millisegundos
+    return Date.now() - parseInt(timestamp) > TOKEN_EXPIRY_TIME;
+  }
+};
 
 const LoginPage = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = TokenService.getToken();
+    if (token && !TokenService.isTokenExpired()) {
+      navigate('/HomePage');
+    }
+  }, [navigate]);
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      TokenService.removeToken();
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,15 +55,13 @@ const LoginPage = () => {
   
       if (response.ok) {
         const { access_token } = await response.json();
-        localStorage.setItem('authToken', access_token);
+        TokenService.setToken(access_token);
         navigate('/HomePage');
       } else {
         console.error('Erro de login:', response.status);
-        // Exibir uma mensagem de erro para o usuário
       }
     } catch (error) {
       console.error('Erro ao fazer login:', error);
-      // Exibir uma mensagem de erro genérica para o usuário
     }
   };
    
@@ -72,6 +105,23 @@ const LoginPage = () => {
       </form>
     </div>
   );
+};
+
+export const useAuthProtection = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkAuth = () => {
+      if (!TokenService.getToken() || TokenService.isTokenExpired()) {
+        TokenService.removeToken();
+        navigate('/login');
+      }
+    };
+
+    checkAuth();
+    const interval = setInterval(checkAuth, 30000); // Verifica a cada 30 segundos
+    return () => clearInterval(interval);
+  }, [navigate]);
 };
 
 export default LoginPage;
