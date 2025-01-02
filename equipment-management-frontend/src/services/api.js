@@ -1,44 +1,71 @@
 import axios from 'axios';
 
+const TOKEN_EXPIRY_TIME = 5 * 60 * 1000; // 5 minutos
+
+const TokenService = {
+  getToken: () => sessionStorage.getItem('authToken'),
+  setToken: (token) => {
+    sessionStorage.setItem('authToken', token);
+    sessionStorage.setItem('tokenTimestamp', Date.now().toString());
+  },
+  removeToken: () => {
+    sessionStorage.removeItem('authToken');
+    sessionStorage.removeItem('tokenTimestamp');
+  },
+  isTokenExpired: () => {
+    const timestamp = sessionStorage.getItem('tokenTimestamp');
+    if (!timestamp) return true;
+    return Date.now() - parseInt(timestamp) > TOKEN_EXPIRY_TIME;
+  }
+};
+
 const api = axios.create({
-  baseURL: 'http://localhost:5000', // Verificar a disponibilidade da porta na VM
+  baseURL: 'http://localhost:5000',
   headers: {
     'Content-Type': 'application/json',
   },
+});
+
+// Interceptor para adicionar token
+api.interceptors.request.use((config) => {
+  const token = TokenService.getToken();
+  if (token && !TokenService.isTokenExpired()) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 // Interceptor para tratamento de erros
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (error.response?.status === 401) {
+      TokenService.removeToken();
+      window.location.href = '/login';
+    }
     console.error('API Error:', error);
     return Promise.reject(error);
   }
 );
 
-// Funções para autenticação
 export const authApi = {
-  login: (username, password) => {
-    return api.post('/auth/login', { username, password });
+  login: async (username, password) => {
+    const response = await api.post('/auth/login', { username, password });
+    TokenService.setToken(response.data.access_token);
+    return response;
   },
+  logout: () => {
+    TokenService.removeToken();
+  }
 };
 
-// Funções para interagir com o equipamento
 export const equipmentApi = {
-  // Buscar todos os equipamentos
   getAll: () => api.get('/equipment'),
-  
-  // Buscar um equipamento específico
   getOne: (id) => api.get(`/equipment/${id}`),
-  
-  // Criar um novo equipamento
   create: (data) => api.post('/equipment', data),
-  
-  // Atualizar um equipamento
   update: (id, data) => api.patch(`/equipment/${id}`, data),
-  
-  // Deletar um equipamento
   delete: (id) => api.delete(`/equipment/${id}`),
 };
 
+export { TokenService };
 export default api;
