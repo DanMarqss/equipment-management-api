@@ -56,7 +56,7 @@ const LoginPage = () => {
       if (response.ok) {
         const { access_token } = await response.json();
         TokenService.setToken(access_token);
-        navigate('/HomePage');
+        navigate('/');
       } else {
         console.error('Erro de login:', response.status);
       }
