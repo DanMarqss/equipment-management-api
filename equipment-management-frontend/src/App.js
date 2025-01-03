@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { TokenService } from './services/api';
 import LoginPage from './pages/LoginPage';
 import HomePage from './pages/HomePage';
 import EquipamentosPage from './pages/EquipamentosPage';
@@ -8,11 +9,24 @@ import EquipamentoViewPage from './pages/EquipamentoViewPage';
 import Sidebar from './components/Sidebar';
 
 const PrivateRoute = ({ children }) => {
-  const isAuthenticated = !!localStorage.getItem('authToken');
+  const isAuthenticated = TokenService.getToken() && !TokenService.isTokenExpired();
   return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
 
 const ProtectedLayout = () => {
+  useEffect(() => {
+    const checkAuth = () => {
+      if (!TokenService.getToken() || TokenService.isTokenExpired()) {
+        TokenService.removeToken();
+        window.location.href = '/login';
+      }
+    };
+
+    checkAuth();
+    const interval = setInterval(checkAuth, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="flex h-screen">
       <Sidebar />
