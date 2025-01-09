@@ -20,7 +20,7 @@ const TokenService = {
 };
 
 const api = axios.create({
-  baseURL: 'http://localhost:4000',
+  baseURL: 'http://179.191.232.25:4000',
   headers: {
     'Content-Type': 'application/json',
   },
